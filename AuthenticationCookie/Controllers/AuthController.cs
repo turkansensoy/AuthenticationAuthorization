@@ -29,20 +29,27 @@ namespace AuthenticationCookie.Controllers
             if (ModelState.IsValid)
             {
                User? user= _context.Users.SingleOrDefault(_=>_.Username.ToLower()== loginViewModel.UserName);
-              bool verifiedPassword=  _authService.VerifyPasswordHash(loginViewModel.Password,user.PasswordHash,user.PasswordSalt);
-                if (user !=null && verifiedPassword != false)
+                if (user !=null)
                 {
-                    List<Claim> claims = new List<Claim>();
-                    claims.Add(new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()));
-                    claims.Add(new Claim(ClaimTypes.Name,user.FullName ?? string.Empty));
-                    claims.Add(new Claim("UserName", user.Username));
-                    claims.Add(new Claim(ClaimTypes.Role,user.Role));
+                    bool verifiedPassword = _authService.VerifyPasswordHash(loginViewModel.Password, user.PasswordHash, user.PasswordSalt);
+                    if (verifiedPassword)
+                    {
+                        List<Claim> claims = new List<Claim>();
+                        claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                        claims.Add(new Claim(ClaimTypes.Name, user.FullName ?? string.Empty));
+                        claims.Add(new Claim("UserName", user.Username));
+                        claims.Add(new Claim(ClaimTypes.Role, user.Role));
 
-                    ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims,CookieAuthenticationDefaults.AuthenticationScheme);
-                    ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-                    HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+                        ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        ClaimsPrincipal claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+                        HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-                    return RedirectToAction("Index","Home");
+                        return RedirectToAction("Index", "Home");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Kullanıcı adı yada şifre hatalı");
+                    }
                 }
                 else
                 {
